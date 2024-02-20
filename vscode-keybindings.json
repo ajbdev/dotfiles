@@ -1,0 +1,22 @@
+[
+    {
+        "key": "f6",
+        "command": "runCommands",
+        "args": {
+            "commands": [
+                { "command": "typescript.removeUnusedImports" },
+                {
+                    "command": "editor.action.sourceAction",
+                    "args": {
+                        "kind": "source.addMissingImports",
+                        "apply": "first"
+                    }
+                },
+                {
+                    "command": "eslint.executeAutofix"
+                }
+            ]
+        }
+    }
+]
+
