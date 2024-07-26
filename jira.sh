@@ -3,15 +3,15 @@
 set -e
 set -o pipefail
 
-if [ -z "$JIRA_BASE_URL" ] || [ -z "$JIRA_USERNAME" ] || [ -z "$JIRA_API_TOKEN" ]; then
+if [ -z "$JIRA_BASE_URL" ] || [ -z "$JIRA_USERNAME" ] || [ -z "$JIRA_API_TOKEN" || [ -z "$GIT_BRANCH_PREFIX"  ]; then
     echo -e "The following ENV vars are required:\n"
     echo -e "JIRA_BASE_URL: Fully qualified domain of JIRA host (e.g., https://acme.atlassian.net)"
     echo -e "JIRA_USERNAME: JIRA username to act on behalf of"
-    echo -e "JIRA_API_TOKEN: Generated JIRA API token\n"
+    echo -e "JIRA_API_TOKEN: Generated JIRA API token"
+    echo -e "GIT_BRANCH_PREFIX: First folder name of git branch\n"
     exit 1
 fi
 
-GIT_BRANCH_PREFIX="andy"
 SCRIPT_DIR=$(dirname "$0")
 ISSUE="$1"
 AUTH=$(echo -n "$JIRA_USERNAME:$JIRA_API_TOKEN" | base64)
