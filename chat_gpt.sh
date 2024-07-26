@@ -7,7 +7,7 @@ case "$SUGGEST_TYPE" in
             echo -e "No diff found; \`git add\` your changes first."
             exit 1
         fi
-        CONTENT="Write a concise, human readable commit message, using bullet points if needed, for the following: \n $DIFF \n\nDo not add any punctuation except dashes the output."
+        CONTENT="Write a concise, human readable commit message, using bullet points if needed, for the following: \n $DIFF \n\nDo not add any punctuation except dashes into the output."
         ;;
     branch-name)
         if [[ -z $2 ]]; then

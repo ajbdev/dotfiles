@@ -6,7 +6,7 @@ set -o pipefail
 if [ -z "$JIRA_BASE_URL" ] || [ -z "$JIRA_USERNAME" ] || [ -z "$JIRA_API_TOKEN" ]; then
     echo -e "The following ENV vars are required:\n"
     echo -e "JIRA_BASE_URL: Fully qualified domain of JIRA host (e.g., https://acme.atlassian.net)"
-    echo -e "JIRA_USERNAME: JIRA username to act on behalf"
+    echo -e "JIRA_USERNAME: JIRA username to act on behalf of"
     echo -e "JIRA_API_TOKEN: Generated JIRA API token\n"
     exit 1
 fi
