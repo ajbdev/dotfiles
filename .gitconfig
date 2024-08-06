@@ -6,7 +6,7 @@
         code = !code -r $(git diff --name-only main...) .
         codecommit = !code -r $(git diff-tree --no-commit-id --name-only HEAD -r) .
 	gpt-diff = !~/chat_gpt.sh git-diff
-        jira = !~/jira.sh $2
+        jira = !~/jira.sh "$@"
 [core]
 	editor = vim
 [diff]
