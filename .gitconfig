@@ -5,7 +5,7 @@
 	email = andy@humla.com
 [alias]
 	commitem = commit --allow-empty-message -m \"\"
-	work = !git reflog show  --pretty=format:'%gs ~ %gd' --date=relative | grep 'checkout:' | grep -oE '[^ ]+ ~ .*' | awk -F~ '!seen[$1]++' | head -n 20 | awk -F' ~ HEAD@{' '{printf(\"  \\033[33m%s: \\033[37m %s\\033[0m\\n\", substr($2, 1, length($2)-1), $1)}'
+	work = "!f() { limit=${1:-20}; git reflog show  --pretty=format:'%gs ~ %gd' --date=relative | grep 'checkout:' | grep -oE '[^ ]+ ~ .*' | awk -F~ '!seen[$1]++' | head -n $limit | awk -F' ~ HEAD@{' '{printf(\"  \\033[33m%s: \\033[37m %s\\033[0m\\n\", substr($2, 1, length($2)-1), $1)}'; }; f"
 	code = !code -r $(git diff --name-only main...) .
 	codecommit = !code -r $(git diff-tree --no-commit-id --name-only HEAD -r) .
 	gpt-diff = !~/chat_gpt.sh git-diff
