@@ -1,0 +1,80 @@
+#!/bin/bash
+
+# Script to fetch JIRA ticket details and launch Claude with prepopulated prompt
+# Usage: ./jira_claude.sh TICKET_NUMBER
+
+if [ $# -eq 0 ]; then
+    echo "Usage: $0 <JIRA_TICKET_NUMBER>"
+    echo "Example: $0 HUM-1234"
+    exit 1
+fi
+
+TICKET_NUMBER="$1"
+AUTH=$(echo -n "$JIRA_USERNAME:$JIRA_API_TOKEN" | base64)
+
+# Check required environment variables
+if [ -z "$JIRA_API_TOKEN" ] || [ -z "$JIRA_BASE_URL" ] || [ -z "$JIRA_USERNAME" ]; then
+    echo "Error: Required environment variables not set:"
+    echo "  JIRA_API_TOKEN, JIRA_BASE_URL, JIRA_USERNAME"
+    exit 1
+fi
+
+# Fetch ticket data from JIRA API
+JIRA_RESPONSE=$(curl -s -L -H "Authorization: Basic $AUTH"  \
+    -H "Accept: application/json" \
+    -H "Content-Type: application/json" \
+    "$JIRA_BASE_URL/issue/$TICKET_NUMBER")
+
+# Check if curl command was successful
+if [ $? -ne 0 ]; then
+    echo "Error: Failed to connect to JIRA API"
+    exit 1
+fi
+
+# Extract ticket details from the JSON response
+TICKET_TITLE=$(echo "$JIRA_RESPONSE" | jq -r '.fields.summary')
+TICKET_DESCRIPTION=$(echo "$JIRA_RESPONSE" | jq -r '.fields.description // "No description provided"')
+TICKET_STATUS=$(echo "$JIRA_RESPONSE" | jq -r '.fields.status.name')
+TICKET_PRIORITY=$(echo "$JIRA_RESPONSE" | jq -r '.fields.priority.name // "Not set"')
+TICKET_TYPE=$(echo "$JIRA_RESPONSE" | jq -r '.fields.issuetype.name')
+ASSIGNEE=$(echo "$JIRA_RESPONSE" | jq -r '.fields.assignee.displayName // "Unassigned"')
+
+# Check if ticket exists or if there was an error
+if [ "$TICKET_TITLE" = "null" ] || [ -z "$TICKET_TITLE" ]; then
+    echo "Error: Could not retrieve ticket $TICKET_NUMBER or ticket does not exist"
+    echo "Response: $JIRA_RESPONSE"
+    exit 1
+fi
+
+# Create a comprehensive prompt for Claude
+CLAUDE_PROMPT="I'm working on JIRA ticket $TICKET_NUMBER. Here are the details:
+
+**Ticket:** $TICKET_NUMBER
+**Title:** $TICKET_TITLE
+**Type:** $TICKET_TYPE
+**Status:** $TICKET_STATUS
+**Priority:** $TICKET_PRIORITY
+**Assignee:** $ASSIGNEE
+
+**Description:**
+$TICKET_DESCRIPTION
+
+Please help me understand this ticket and provide guidance on how to approach implementing a solution. Consider:
+
+1. What are the key requirements based on the description?
+2. What potential technical approaches could be used?
+3. Are there any edge cases or considerations I should be aware of?
+4. What would be a good development plan for this ticket?
+
+If you need more context about the codebase or specific technical details, please let me know what additional information would be helpful."
+
+# Create a temporary file with the prompt
+TEMP_FILE=$(mktemp)
+echo "$CLAUDE_PROMPT" > "$TEMP_FILE"
+
+# Launch Claude Code with the prompt
+echo "Launching Claude Code with JIRA ticket details..."
+claude < "$TEMP_FILE"
+
+# Clean up temporary file
+rm "$TEMP_FILE"

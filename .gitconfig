@@ -11,6 +11,7 @@
 	gpt-diff = !~/chat_gpt.sh git-diff
 	jira = !~/jira.sh "$@"
 	start = "!f() { BRANCH_NAME=$(~/dotfiles/jira_branch.sh \"$1\") && git checkout main && git pull && git checkout -b \"$BRANCH_NAME\"; }; f"
+	claude = !~/dotfiles/jira_claude.sh "$@"
         lg = log --graph --abbrev-commit --decorate --date=relative --format=format:'%C(bold blue)%h%C(reset) - %C(bold green)(%ar)%C(reset) %C(white)%s%C(reset) %C(dim white)- %an%C(reset)%C(bold yellow)%d%C(reset)' --all -n 15
 [core]
 	editor = vim
