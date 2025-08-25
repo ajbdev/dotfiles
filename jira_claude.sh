@@ -39,11 +39,45 @@ TICKET_PRIORITY=$(echo "$JIRA_RESPONSE" | jq -r '.fields.priority.name // "Not s
 TICKET_TYPE=$(echo "$JIRA_RESPONSE" | jq -r '.fields.issuetype.name')
 ASSIGNEE=$(echo "$JIRA_RESPONSE" | jq -r '.fields.assignee.displayName // "Unassigned"')
 
+# Extract attachment information
+ATTACHMENTS=$(echo "$JIRA_RESPONSE" | jq -r '.fields.attachment // []')
+
 # Check if ticket exists or if there was an error
 if [ "$TICKET_TITLE" = "null" ] || [ -z "$TICKET_TITLE" ]; then
     echo "Error: Could not retrieve ticket $TICKET_NUMBER or ticket does not exist"
     echo "Response: $JIRA_RESPONSE"
     exit 1
+fi
+
+# Create temporary directory for attachments
+ATTACHMENT_DIR=$(mktemp -d)
+ATTACHMENT_FILES=()
+
+# Download attachments if they exist
+ATTACHMENT_COUNT=$(echo "$ATTACHMENTS" | jq -r 'length')
+if [ "$ATTACHMENT_COUNT" -gt 0 ]; then
+    echo "Downloading $ATTACHMENT_COUNT attachment(s)..."
+    
+    for i in $(seq 0 $((ATTACHMENT_COUNT - 1))); do
+        ATTACHMENT_URL=$(echo "$ATTACHMENTS" | jq -r ".[$i].content")
+        ATTACHMENT_NAME=$(echo "$ATTACHMENTS" | jq -r ".[$i].filename")
+        ATTACHMENT_SIZE=$(echo "$ATTACHMENTS" | jq -r ".[$i].size")
+        
+        if [ "$ATTACHMENT_URL" != "null" ] && [ "$ATTACHMENT_NAME" != "null" ]; then
+            echo "  Downloading: $ATTACHMENT_NAME ($ATTACHMENT_SIZE bytes)"
+            ATTACHMENT_PATH="$ATTACHMENT_DIR/$ATTACHMENT_NAME"
+            
+            # Download the attachment
+            curl -s -L -H "Authorization: Basic $AUTH" \
+                "$ATTACHMENT_URL" -o "$ATTACHMENT_PATH"
+            
+            if [ $? -eq 0 ] && [ -f "$ATTACHMENT_PATH" ]; then
+                ATTACHMENT_FILES+=("$ATTACHMENT_PATH")
+            else
+                echo "    Warning: Failed to download $ATTACHMENT_NAME"
+            fi
+        fi
+    done
 fi
 
 # Create a comprehensive prompt for Claude
@@ -57,7 +91,21 @@ CLAUDE_PROMPT="I'm working on JIRA ticket $TICKET_NUMBER. Here are the details:
 **Assignee:** $ASSIGNEE
 
 **Description:**
-$TICKET_DESCRIPTION
+$TICKET_DESCRIPTION"
+
+# Add attachment information to the prompt if attachments exist
+if [ ${#ATTACHMENT_FILES[@]} -gt 0 ]; then
+    CLAUDE_PROMPT="$CLAUDE_PROMPT
+
+**Attachments:** (${#ATTACHMENT_FILES[@]} file(s) downloaded and attached)"
+    for attachment_file in "${ATTACHMENT_FILES[@]}"; do
+        attachment_name=$(basename "$attachment_file")
+        CLAUDE_PROMPT="$CLAUDE_PROMPT
+- $attachment_name"
+    done
+fi
+
+CLAUDE_PROMPT="$CLAUDE_PROMPT
 
 Please help me understand this ticket and provide guidance on how to approach implementing a solution. Consider:
 
@@ -72,9 +120,20 @@ If you need more context about the codebase or specific technical details, pleas
 TEMP_FILE=$(mktemp)
 echo "$CLAUDE_PROMPT" > "$TEMP_FILE"
 
-# Launch Claude Code with the prompt
-echo "Launching Claude Code with JIRA ticket details..."
-claude < "$TEMP_FILE"
+echo $CLAUDE_PROMPT
 
-# Clean up temporary file
+# Launch Claude Code with the prompt and attachments
+echo "Launching Claude Code with JIRA ticket details..."
+if [ ${#ATTACHMENT_FILES[@]} -gt 0 ]; then
+    # Launch Claude with prompt and attachment files
+    claude < "$TEMP_FILE" "${ATTACHMENT_FILES[@]}"
+else
+    # Launch Claude with just the prompt
+    claude < "$TEMP_FILE"
+fi
+
+# Clean up temporary files and attachment directory
 rm "$TEMP_FILE"
+if [ -d "$ATTACHMENT_DIR" ]; then
+    rm -rf "$ATTACHMENT_DIR"
+fi
