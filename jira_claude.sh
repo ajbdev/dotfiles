@@ -120,17 +120,23 @@ If you need more context about the codebase or specific technical details, pleas
 TEMP_FILE=$(mktemp)
 echo "$CLAUDE_PROMPT" > "$TEMP_FILE"
 
-echo $CLAUDE_PROMPT
-
-# Launch Claude Code with the prompt and attachments
-echo "Launching Claude Code with JIRA ticket details..."
+# Add attachment file paths to the prompt if they exist
 if [ ${#ATTACHMENT_FILES[@]} -gt 0 ]; then
-    # Launch Claude with prompt and attachment files
-    claude < "$TEMP_FILE" "${ATTACHMENT_FILES[@]}"
-else
-    # Launch Claude with just the prompt
-    claude < "$TEMP_FILE"
+    CLAUDE_PROMPT="$CLAUDE_PROMPT
+
+**Attachment files (available for reading):**"
+    for attachment_file in "${ATTACHMENT_FILES[@]}"; do
+        CLAUDE_PROMPT="$CLAUDE_PROMPT
+- $attachment_file"
+    done
+    CLAUDE_PROMPT="$CLAUDE_PROMPT
+
+Please read the attachment files above to better understand the requirements."
 fi
+
+# Launch Claude Code with the prompt automatically loaded
+echo "Launching Claude Code with JIRA ticket details..."
+claude "$CLAUDE_PROMPT"
 
 # Clean up temporary files and attachment directory
 rm "$TEMP_FILE"
