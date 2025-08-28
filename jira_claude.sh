@@ -124,6 +124,18 @@ echo "$CLAUDE_PROMPT" > "$TEMP_FILE"
 if [ ${#ATTACHMENT_FILES[@]} -gt 0 ]; then
     CLAUDE_PROMPT="$CLAUDE_PROMPT
 
+**IMPORTANT:** Please make sure to:
+- Read all attachment files provided below to fully understand the requirements
+- View and analyze any images or screenshots attached to understand the visual context
+- Consider the information from all attachments when providing your analysis and recommendations
+
+Updated considerations:
+
+1. What are the key requirements based on the description AND attachments?
+2. What potential technical approaches could be used?
+3. Are there any edge cases or considerations I should be aware of?
+4. What would be a good development plan for this ticket?
+
 **Attachment files (available for reading):**"
     for attachment_file in "${ATTACHMENT_FILES[@]}"; do
         CLAUDE_PROMPT="$CLAUDE_PROMPT
@@ -131,7 +143,7 @@ if [ ${#ATTACHMENT_FILES[@]} -gt 0 ]; then
     done
     CLAUDE_PROMPT="$CLAUDE_PROMPT
 
-Please read the attachment files above to better understand the requirements."
+**CRITICAL:** Please read ALL the attachment files listed above. If any are images (screenshots, mockups, diagrams), view them carefully as they contain important visual context for the requirements. These attachments are essential for understanding what needs to be implemented."
 fi
 
 # Launch Claude Code with the prompt automatically loaded
