@@ -23,7 +23,7 @@ fi
 JIRA_RESPONSE=$(curl -s -L -H "Authorization: Basic $AUTH"  \
     -H "Accept: application/json" \
     -H "Content-Type: application/json" \
-    "$JIRA_BASE_URL/issue/$TICKET_NUMBER")
+    "$JIRA_BASE_URL/rest/api/2/issue/$TICKET_NUMBER")
 
 # Check if curl command was successful
 if [ $? -ne 0 ]; then
